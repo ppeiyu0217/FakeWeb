@@ -54,7 +54,6 @@
     <Compile Include="Dto\OperationInfo.cs" />
     <Compile Include="MasterLogic.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QueryBoardFromDb.cs" />
     <Compile Include="_BaseLogic.cs" />
   </ItemGroup>
   <ItemGroup>

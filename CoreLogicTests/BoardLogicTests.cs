@@ -15,62 +15,62 @@ namespace CoreLogicTests
     [TestFixture]
     public class BoardLogicTests
     {
+        private BoardLogicForTest _logicForTest;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _logicForTest = new BoardLogicForTest(new Operation());
+        }
+
         [Test]
         public async Task board_api_has_error()
         {
-            var logic = new BoardLogicForTest(new Operation());
+            GivenBoardQueryResp(false);
+            var actual = await WhenGetBoardList();
+            ResultShouldBe(actual, false, "Error");
+        }
 
-            logic.SetBoardQueryResp(new BoardQueryResp()
-            {
-                IsSuccess = false,
-            });
-
-            var actual = await logic.GetBoardList(new SearchParamDto(), 10);
-
+        private static void ResultShouldBe(IsSuccessResult<BoardListDto> actual, bool isSuccess, string errorMessage)
+        {
             var expect = new IsSuccessResult<BoardQueryResp>
             {
-                IsSuccess = false,
-                ErrorMessage = "Error"
+                IsSuccess = isSuccess,
+                ErrorMessage = errorMessage
             };
 
             expect.ToExpectedObject().ShouldMatch(actual);
         }
 
-
-        [Test]
-        public void if_success_pass_isTest_return_true()
+        private async Task<IsSuccessResult<BoardListDto>> WhenGetBoardList()
         {
-            var boardDto = new List<BoardDto>()
-            {
-                new BoardDto() {Id = "1", Name = "PY", IsTest = true},
-                new BoardDto() {Id = "2", Name = "PYY", IsTest = false},
-            };
-
-
-            var expectBoardList = new BoardListDto()
-            {
-                BoardListItems = new BoardListItem[]
-                {
-                    new BoardListItem() {Id = "2", Name = "PYY"}
-                }
-            };
-
-            var logic = new BoardLogic(new Operation());
-            var act = logic.GetBoardList(new SearchParamDto(), 1);
-
+            var actual = await _logicForTest.GetBoardList(new SearchParamDto(), 10);
+            return actual;
         }
 
-        //
-        //api_issuccess_false
-        //has_warning_log
-        //
+        private void GivenBoardQueryResp(bool isSuccess)
+        {
+            _logicForTest.SetBoardQueryResp(new BoardQueryResp()
+            {
+                IsSuccess = isSuccess,
+            });
+        }
+
+
+        
+
+        //    //
+        //    //api_issuccess_false
+        //    //has_warning_log
+        //    //
     }
 
     internal class BoardLogicForTest : BoardLogic
     {
         private BoardQueryResp _boardQueryResp;
+        private List<BoardDto> _boardDto;
 
-        public BoardLogicForTest(Operation operation, BoardDa da = null) : base(operation, da)
+        public BoardLogicForTest(Operation operation, IBoardDa da = null) : base(operation, da)
         {
         }
 
@@ -82,7 +82,6 @@ namespace CoreLogicTests
         protected override Task<BoardQueryResp> BoardQueryResp(BoardQueryDto queryDto)
         {
             return Task.FromResult(_boardQueryResp);
-
         }
     }
 }

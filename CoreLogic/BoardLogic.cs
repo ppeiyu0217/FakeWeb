@@ -13,15 +13,13 @@ namespace CoreLogic
 {
     public class BoardLogic : _BaseLogic
     {
-        private readonly BoardDa _boardDa;
-        private readonly QueryBoardFromDb _queryBoardFromDb;
+        private readonly IBoardDa _boardDa;
         private ApiService ApiService => new ApiService(GetLogger());
 
-        public BoardLogic(Operation operation, BoardDa da = null)
+        public BoardLogic(Operation operation, IBoardDa da = null)
             : base(operation)
         {
             _boardDa = da ?? new BoardDa(operation);
-            _queryBoardFromDb = new QueryBoardFromDb(da);
         }
 
         public async Task<IsSuccessResult<BoardListDto>> GetBoardList(SearchParamDto search, int pageSize)
@@ -39,7 +37,7 @@ namespace CoreLogic
                 return new IsSuccessResult<BoardListDto>() {ErrorMessage = "Error", IsSuccess = false};
 
             // 使用 http 的資料 從 DB 取得資料
-            var settings = _queryBoardFromDb.GetSettingFromDb(resp);
+            var settings = QueryBoardFromDb(resp);
 
             LogWarning(settings, GetLogger());
 
@@ -61,6 +59,12 @@ namespace CoreLogic
             };
         }
 
+        protected virtual List<BoardDto> QueryBoardFromDb(BoardQueryResp resp)
+        {
+            var settings = _boardDa.GetBoardData(resp.Items.Select(r => r.Id));
+            return settings;
+        }
+
         protected virtual async Task<BoardQueryResp> BoardQueryResp(BoardQueryDto queryDto)
         {
             var resp = await ApiService.PostApi<BoardQueryDto, BoardQueryResp>(queryDto);
@@ -71,19 +75,6 @@ namespace CoreLogic
         {
             logger.Info(
                 string.Join(",", settings.Where(s => s.IsWarning).Select(s => s.Name).ToArray()));
-        }
-
-        private async Task<BoardQueryResp> BoardQueryResp(SearchParamDto search, int pageSize)
-        {
-            var queryDto = new BoardQueryDto
-            {
-                PageSize = pageSize,
-                Search = search
-            };
-
-            // Http 呼叫 Service 取得資料
-            var resp = await ApiService.PostApi<BoardQueryDto, BoardQueryResp>(queryDto);
-            return resp;
         }
     }
 }
