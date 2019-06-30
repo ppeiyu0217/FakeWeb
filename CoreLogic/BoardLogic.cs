@@ -37,9 +37,10 @@ namespace CoreLogic
                 return new IsSuccessResult<BoardListDto>() {ErrorMessage = "Error", IsSuccess = false};
 
             // 使用 http 的資料 從 DB 取得資料
-            var settings = QueryBoardFromDb(resp);
+            var settings = _boardDa.GetBoardData(resp.Items.Select(r => r.Id));
 
-            LogWarning(settings, GetLogger());
+            GetLogger().Info(
+                string.Join(",", settings.Where(s => s.IsWarning).Select(s => s.Name).ToArray()));
 
             var boardListDto = new BoardListDto
             {
@@ -57,12 +58,6 @@ namespace CoreLogic
                 IsSuccess = true,
                 ReturnObject = boardListDto
             };
-        }
-
-        protected virtual List<BoardDto> QueryBoardFromDb(BoardQueryResp resp)
-        {
-            var settings = _boardDa.GetBoardData(resp.Items.Select(r => r.Id));
-            return settings;
         }
 
         protected virtual async Task<BoardQueryResp> BoardQueryResp(BoardQueryDto queryDto)

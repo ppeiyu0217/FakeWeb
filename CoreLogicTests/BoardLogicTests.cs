@@ -8,6 +8,7 @@ using CoreLogic.Dto;
 using CoreService.Dto;
 using CoreWebCommon.Dto;
 using ExpectedObjects;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace CoreLogicTests
@@ -16,11 +17,13 @@ namespace CoreLogicTests
     public class BoardLogicTests
     {
         private BoardLogicForTest _logicForTest;
+        private IBoardDa _boardDa;
 
         [SetUp]
         public void SetUp()
         {
-            _logicForTest = new BoardLogicForTest(new Operation());
+            _boardDa = Substitute.For<IBoardDa>();
+            _logicForTest = new BoardLogicForTest(new Operation(), _boardDa);
         }
 
         [Test]
@@ -30,6 +33,52 @@ namespace CoreLogicTests
             var actual = await WhenGetBoardList();
             ResultShouldBe(actual, false, "Error");
         }
+
+        [Test]
+        public async Task get_board_list_success_with_3_real_data_and_2_test_data()
+        {
+            GivenBoardQueryResp(true);
+
+            GivenBoardDataFromDb(new List<BoardDto>()
+            {
+                new BoardDto() {Id = "11", IsTest = true},
+                new BoardDto() {Id = "12", IsTest = false},
+                new BoardDto() {Id = "13", IsTest = true},
+                new BoardDto() {Id = "14", IsTest = false},
+                new BoardDto() {Id = "16", IsTest = false},
+            });
+
+            var actual = await WhenGetBoardList();
+
+            ResultShouldBeSuccess(actual, new List<BoardListItem>
+            {
+                new BoardListItem() {Id = "12"},
+                new BoardListItem() {Id = "14"},
+                new BoardListItem() {Id = "16"},
+            });
+        }
+
+        private static void ResultShouldBeSuccess(IsSuccessResult<BoardListDto> actual, List<BoardListItem> boardListItems)
+        {
+            var expected = new IsSuccessResult<BoardListDto>()
+            {
+                IsSuccess = true,
+                ReturnObject = new BoardListDto()
+                {
+                    BoardListItems = boardListItems
+                }
+            };
+
+            expected.ToExpectedObject().ShouldMatch(actual);
+        }
+
+        private void GivenBoardDataFromDb(List<BoardDto> boardDTOs)
+        {
+            _boardDa.GetBoardData(new[] {"222"}).ReturnsForAnyArgs(
+                boardDTOs);
+
+        }
+
 
         private static void ResultShouldBe(IsSuccessResult<BoardListDto> actual, bool isSuccess, string errorMessage)
         {
@@ -53,11 +102,12 @@ namespace CoreLogicTests
             _logicForTest.SetBoardQueryResp(new BoardQueryResp()
             {
                 IsSuccess = isSuccess,
+                Items = new List<BoardQueryRespItem>()
             });
         }
 
 
-        
+
 
         //    //
         //    //api_issuccess_false
